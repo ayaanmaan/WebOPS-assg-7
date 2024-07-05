@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradeBook Smart Contract Interface</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.0.umd.min.js"></script>
+</head>
+<body>
+    <h1>GradeBook Smart Contract Interface</h1>
+    
+    <div id="connectionStatus">Not connected to MetaMask</div>
+    
+    <h2>Add Grade</h2>
+    <input type="text" id="addStudentName" placeholder="Student Name">
+    <input type="text" id="addSubject" placeholder="Subject">
+    <input type="number" id="addGrade" placeholder="Grade">
+    <button onclick="addGrade()">Add Grade</button>
+
+    <h2>Update Grade</h2>
+    <input type="number" id="updateIndex" placeholder="Grade Index">
+    <input type="number" id="updateGrade" placeholder="New Grade">
+    <button onclick="updateGrade()">Update Grade</button>
+
+    <h2>Get Grade</h2>
+    <input type="text" id="getStudentName" placeholder="Student Name">
+    <input type="text" id="getSubject" placeholder="Subject">
+    <button onclick="getGrade()">Get Grade</button>
+    <div id="getGradeResult"></div>
+
+    <h2>Average Grade</h2>
+    <input type="text" id="avgSubject" placeholder="Subject">
+    <button onclick="averageGrade()">Get Average Grade</button>
+    <div id="averageGradeResult"></div>
+
+    <script>
+        const contractAddress = "0x59F3BF69749267A81984eBC49440Cd588b74dD5E"; // Replace this with your actual contract address
+        const contractABI = [
+            "function addGrade(string memory _studentName, string memory _subject, uint256 _grade) public",
+            "function updateGrade(uint256 _index, uint256 _newGrade) public",
+            "function getGrade(string memory _studentName, string memory _subject) public view returns (uint256)",
+            "function averageGrade(string memory _subject) public view returns (uint256)"
+        ];
+
+        let provider;
+        let signer;
+        let contract;
+
+        async function initializeContract() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+                    document.getElementById('connectionStatus').innerText = 'Connected to MetaMask';
+                    console.log("Contract initialized:", contract);
+                } catch (error) {
+                    console.error("Error initializing contract:", error);
+                    document.getElementById('connectionStatus').innerText = 'Error connecting to MetaMask';
+                }
+            } else {
+                console.log('MetaMask not detected');
+                document.getElementById('connectionStatus').innerText = 'MetaMask not detected';
+            }
+        }
+
+        async function addGrade() {
+            if (!contract) {
+                alert("Contract not initialized. Please refresh the page and connect to MetaMask.");
+                return;
+            }
+            const studentName = document.getElementById('addStudentName').value;
+            const subject = document.getElementById('addSubject').value;
+            const grade = document.getElementById('addGrade').value;
+            try {
+                console.log("Calling addGrade with:", studentName, subject, grade);
+                const tx = await contract.addGrade(studentName, subject, grade);
+                await tx.wait();
+                alert("Grade added successfully!");
+            } catch (error) {
+                console.error("Error adding grade:", error);
+                alert("Error adding grade. Check console for details.");
+            }
+        }
+
+        async function updateGrade() {
+            if (!contract) {
+                alert("Contract not initialized. Please refresh the page and connect to MetaMask.");
+                return;
+            }
+            const index = document.getElementById('updateIndex').value;
+            const newGrade = document.getElementById('updateGrade').value;
+            try {
+                console.log("Calling updateGrade with:", index, newGrade);
+                const tx = await contract.updateGrade(index, newGrade);
+                await tx.wait();
+                alert("Grade updated successfully!");
+            } catch (error) {
+                console.error("Error updating grade:", error);
+                alert("Error updating grade. Check console for details.");
+            }
+        }
+
+        async function getGrade() {
+            if (!contract) {
+                alert("Contract not initialized. Please refresh the page and connect to MetaMask.");
+                return;
+            }
+            const studentName = document.getElementById('getStudentName').value;
+            const subject = document.getElementById('getSubject').value;
+            try {
+                console.log("Calling getGrade with:", studentName, subject);
+                const grade = await contract.getGrade(studentName, subject);
+                document.getElementById('getGradeResult').innerText = `Grade: ${grade}`;
+            } catch (error) {
+                console.error("Error getting grade:", error);
+                document.getElementById('getGradeResult').innerText = "Error getting grade";
+            }
+        }
+
+        async function averageGrade() {
+            if (!contract) {
+                alert("Contract not initialized. Please refresh the page and connect to MetaMask.");
+                return;
+            }
+            const subject = document.getElementById('avgSubject').value;
+            try {
+                console.log("Calling averageGrade with:", subject);
+                const avgGrade = await contract.averageGrade(subject);
+                document.getElementById('averageGradeResult').innerText = `Average Grade: ${avgGrade}`;
+            } catch (error) {
+                console.error("Error getting average grade:", error);
+                document.getElementById('averageGradeResult').innerText = "Error getting average grade";
+            }
+        }
+
+        // Initialize contract when the page loads
+        window.addEventListener('load', initializeContract);
+
+        // Re-initialize on account change
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', initializeContract);
+        }
+    </script>
+</body>
+</html>
